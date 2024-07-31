@@ -4,7 +4,7 @@
 Plugin Name: Dan's Mail List Tool 
 Plugin URI:  
 Description: Allows the mapping of CRPC members based on their user metadata to respective mailing lists.
-Version: 0.0.2
+Version: 0.0.3
 Author: dsgnr 
 Author URI: https://github.com/dsgnr 
 License: GPLv2 or later 
@@ -22,14 +22,10 @@ $member_list_options = [
 
 
 function crpc_mail_list_mgr_options_page() {
-	/* Add the top level menu page */
-    add_menu_page(
-		"Mailing List Settings", 
-		"Mailing List Options", 
-		"manage_options", 
-		"crpc_mail_list_mgr", 
-		"crpc_mail_list_mgr_options_page_html"
-	);
+	add_menu_page('CRPC Members Admin', 'CRPC Admin', 'manage_options', 'crpc-plugin-menu', '', 'dashicons-groups' );
+    add_submenu_page('crpc-plugin-menu', 'General', 'General', 'manage_options', 'crpc-plugin-menu', 'plugin_options_general_page_html' );
+    add_submenu_page('crpc-plugin-menu', 'CRPC Mailing List Admin', 'Mailing List Admin', 'manage_options', 'crpc-plugin-list-mgr', 'crpc_mail_list_mgr_options_page_html' );
+    add_submenu_page('crpc-plugin-menu', 'Help', 'Help', 'manage_options', 'crpc-plugin-help-menu', 'plugin_options_help_page_html' );
 }
 
 // Register our crpc_mail_list_mgr_options_page to the admin_menu action hook.
@@ -171,6 +167,20 @@ function crpc_mail_list_mgr_caller() {
 	}
 }
 
+/**
+ * Developers section callback function.
+ *
+ * @param array $args  The settings array, defining title, id, callback.
+ */
+function crpc_mailer_section_dev_callback( $args ) {
+    
+	?>
+	<p>This is a custom plugin to assist with mapping user metadata to respective CRPC mailing lists.
+	</p>
+	<p>Assign the correct mailing list from the dropdown options below.</p>
+	<?php
+}
+
 function crpc_mail_list_mgr_settings_init() {
 	/**
 	 * Dynamically creates option stores
@@ -185,15 +195,27 @@ function crpc_mail_list_mgr_settings_init() {
         return;
     }
 
+	$mailpoet_api = \MailPoet\API\API::MP("v1");
+    $mailing_lists = $mailpoet_api->getlists();
+	if(!count($mailing_lists)) {
+		add_settings_error(
+			"crpc_mail_list_mgrs_messages", 
+			"crpc_mail_list_mgr_message", 
+			__("In order to map attributes to mailing lists, the lists must first be created in the <a href='admin.php?page=mailpoet-lists' target='_blank'>MailPoet Lists Page</a>. </br>Once this is complete, the lists will appear in the dropdowns below for selection.", 
+			"crpc_mail_list_mgr"),
+			"error"
+		);
+	}
+
     // Register a new section in the "crpc_mail_list_mgr" page.
     add_settings_section(
 		"crpc_mail_list_mgr_section_developers", 
 		__('Dan\'s CRPC mailing list management tool', "crpc_mail_list_mgr"), 
-		"", 
+		"crpc_mailer_section_dev_callback", 
 		"crpc_mail_list_mgr"
 	);
 
-    // Register the various settings for the page.
+	// Register the various settings for the page.
     foreach ($GLOBALS["member_list_options"] as $canonical_name => $friendly_name) {
         register_setting("crpc_mail_list_mgr", "crpc_mail_list_mgr_" . $canonical_name . "_options");
         // Register a new field in the "crpc_mail_list_mgr_section_developers" section, inside the "crpc_mail_list_mgr" page.
@@ -206,7 +228,8 @@ function crpc_mail_list_mgr_settings_init() {
 			[
 				"label_for" => "crpc_mail_list_mgr_field_" . $canonical_name, 
 				"class" => "crpc_mail_list_mgr_row", 
-				"crpc_mail_list_mgr_custom_data" => "custom"
+				"crpc_mail_list_mgr_custom_data" => "custom",
+				"mailing_lists" => $mailing_lists,
 			]
 		);
     }
@@ -246,19 +269,16 @@ function create_options($args, $option) {
 	 * @param array $args
 	 * @param string $option
 	 */
-    $mailpoet_api = \MailPoet\API\API::MP("v1");
-    $mailing_lists = $mailpoet_api->getlists();
-    select_fields($args, $mailing_lists, $option);
+    select_fields($args, $option);
 }
 
-function select_fields($args, $lists, $option_type) {
+function select_fields($args, $option_type) {
 	/**
 	 * Dynamically creates the dropdown options for the $option_type
 	 * - the "label_for" key value is used for the "for" attribute of the <label>.
 	 * - the "class" key value is used for the "class" attribute of the <tr> containing the field.
 	 *
 	 * @param array $args
-	 * @param array $lists
 	 * @param string $option_type
 	 */
     $options = get_option("crpc_mail_list_mgr_" . $option_type . "_options"); ?>
@@ -267,7 +287,7 @@ function select_fields($args, $lists, $option_type) {
 		data-custom="<?php echo esc_attr($args["crpc_mail_list_mgr_custom_data"]); ?>"
 		name="crpc_mail_list_mgr_<?php echo esc_attr($option_type); ?>_options[<?php echo esc_attr($args["label_for"]); ?>]">
 		<option value='' >Pick one...</option>
-		<?php foreach ($lists as $list) { ?>
+		<?php foreach ($args["mailing_lists"] as $list) { ?>
 		<option value=<?php echo $list["id"]; ?> <?php echo isset($options[$args["label_for"]]) ? selected($options[$args["label_for"]], $list["id"], false) : ""; ?>>
 			<?php esc_html_e($list["name"], "crpc_mail_list_mgr"); ?>
 		</option>
@@ -275,6 +295,29 @@ function select_fields($args, $lists, $option_type) {
 	</select>
 	<?php
 }
+function plugin_options_general_page_html() {
+	if (!current_user_can("manage_options")) {
+        return;
+    }
+
+	?>
+	<h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+	<p>Some generic text about the plugin, and maybe some information about where things are...</p>
+
+<?php
+}
+
+function plugin_options_help_page_html() {
+	if (!current_user_can("manage_options")) {
+        return;
+    }
+
+	?>
+	<h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+	<p>For any assistance with this site contact the club secretary, or contact Dan for help with this plugin.</p>
+<?php
+}
+
 
 function crpc_mail_list_mgr_options_page_html() {
 	/**
@@ -300,7 +343,6 @@ function crpc_mail_list_mgr_options_page_html() {
 	?>
 	<div class="wrap">
 		<h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-        
 		<form action="options.php" method="post">
 			<?php
 				// output security fields for the registered setting "crpc_mail_list_mgr"
@@ -320,14 +362,14 @@ function crpc_mail_list_mgr_options_page_html() {
         // the button has been pressed AND we've passed the security check
         crpc_mail_list_mgr_caller();
     } ?>
-  	<form action="admin.php?page=crpc_mail_list_mgr" method="post">
+  	<form action="admin.php?page=crpc-plugin-list-mgr" method="post">
 
 		<?php // this is a WordPress security feature - see: https://codex.wordpress.org/WordPress_Nonces
 			wp_nonce_field("crpc_mail_list_mgr_clicked"); 
 		?>
 
 		<input type="hidden" value="true" name="crpc_mail_list_mgr" />
-		<?php if (class_exists(\MailPoet\API\API::class)) { submit_button("Run Subscription Sorter!");} ?>
+		<?php if (class_exists(\MailPoet\API\API::class)) { submit_button("Run Subscription Sorter!", "secondary");} ?>
 	</form>
 
   </div>
