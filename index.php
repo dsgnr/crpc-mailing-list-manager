@@ -1,22 +1,22 @@
 <?php
 /* @package crpc_mail_list_mgr
 
-Plugin Name: Dan's Mail List Tool 
-Plugin URI:  
+Plugin Name: Dan's Mail List Tool
+Plugin URI:
 Description: Allows the mapping of CRPC members based on their user metadata to respective mailing lists.
 Version: 0.0.4
-Author: dsgnr 
-Author URI: https://github.com/dsgnr 
-License: GPLv2 or later 
-Text Domain: crpc_mail_list_mgr 
- 
+Author: dsgnr
+Author URI: https://github.com/dsgnr
+License: GPLv2 or later
+Text Domain: crpc_mail_list_mgr
+
 /* Global vars */
 $member_list_options = [
-	"full_member" => "Full Member", 
-	"probationary_member" => "Probationary Member", 
+	"full_member" => "Full Member",
+	"probationary_member" => "Probationary Member",
 	"prone_shooter" => "Prone Shooter",
-	"benchrest_shooter" => "Benchrest Shooter", 
-	"lsr_shooter" => "LSR Shooter", 
+	"benchrest_shooter" => "Benchrest Shooter",
+	"lsr_shooter" => "LSR Shooter",
 	"full_bore_shooter" => "Full-bore Shooter"
 ];
 
@@ -55,9 +55,9 @@ function crpc_mail_list_mgr_user_iter($mailpoet_api, $user) {
 	 * @param object $user
 	 */
     $sub = [
-		"email" => sanitize_email($user->user_email) , 
-		"first_name" => sanitize_text_field($user->first_name) , 
-		"last_name" => sanitize_text_field($user->last_name) , 
+		"email" => sanitize_email($user->user_email),
+		"first_name" => sanitize_text_field($user->first_name),
+		"last_name" => sanitize_text_field($user->last_name),
 		"full_member" => $user->{'_wpmem_products_full-member'},
 		"probationary_member" => $user->{'_wpmem_products_probationary-member'}
 	];
@@ -85,7 +85,7 @@ function crpc_mail_list_mgr_user_iter($mailpoet_api, $user) {
 				user is assigned to the mapping,
 				the user isn't already subscribed
 			]) => subscribe
-		*/ 
+		*/
         $mail_lists_to_add = array();
 		$mail_lists_to_remove = array();
 		$user_subscriptions = array();
@@ -100,13 +100,13 @@ function crpc_mail_list_mgr_user_iter($mailpoet_api, $user) {
 					if(!empty($sub[$canonical_name] ?? null) && ($sub[$canonical_name] ?? null)) {
 						if(!in_array($list_options, $user_subscriptions)) {
 							$mail_lists_to_add = array_merge(
-								$mail_lists_to_add, 
+								$mail_lists_to_add,
 								get_option("crpc_mail_list_mgr_" . $canonical_name . "_options")
 							);
-						} 
+						}
 					} else {
 						$mail_lists_to_remove = array_merge(
-							$mail_lists_to_remove, 
+							$mail_lists_to_remove,
 							get_option("crpc_mail_list_mgr_" . $canonical_name . "_options")
 						);
 					}
@@ -115,11 +115,10 @@ function crpc_mail_list_mgr_user_iter($mailpoet_api, $user) {
 		}
 		if(count($mail_lists_to_add)) {
 			subscribe_user($mailpoet_api, $subscriber["id"], $mail_lists_to_add);
-		} 
+		}
 		if(count($mail_lists_to_remove)) {
 			unsubscribe_user($mailpoet_api, $subscriber["id"], $mail_lists_to_remove);
-		} 
-		
+		}
     }
     return;
 }
@@ -157,30 +156,27 @@ function unsubscribe_user($mailpoet_api, $user_id, $lists) {
 }
 
 
-
-
-
 function crpc_mail_list_mgr_caller() {
 	/**
-	 * Iterate the WordPress users and determine whether they should be added or removed from subscriptions. 
+	 * Iterate the WordPress users and determine whether they should be added or removed from subscriptions.
 	 */
     $mailpoet_api = \MailPoet\API\API::MP("v1");
     try {
 		$users = get_users();
 		foreach ($users as $user) {
-        	crpc_mail_list_mgr_user_iter($mailpoet_api, $user);
-    	}
+            crpc_mail_list_mgr_user_iter($mailpoet_api, $user);
+        }
 		add_settings_error(
-			"crpc_mail_list_mgrs_messages", 
-			"crpc_mail_list_mgr_message", 
-			__("Users updated in mailing lists...", 
-			"crpc_mail_list_mgr") , 
+			"crpc_mail_list_mgrs_messages",
+			"crpc_mail_list_mgr_message",
+			__("Users updated in mailing lists...",
+			"crpc_mail_list_mgr") ,
 			"updated"
 		);
 	} catch(\Throwable $th) {
-    	add_settings_error(
-			"crpc_mail_list_mgrs_messages", 
-			"crpc_mail_list_mgr_message", 
+        add_settings_error(
+			"crpc_mail_list_mgrs_messages",
+			"crpc_mail_list_mgr_message",
 			__(print_r($th), "crpc_mail_list_mgr"),
 			"error"
 		);
@@ -193,14 +189,14 @@ function crpc_mail_list_mgr_caller() {
  * @param array $args  The settings array, defining title, id, callback.
  */
 function crpc_mailer_section_dev_callback( $args ) {
-    
+
 	?>
 	<p>This is a custom plugin to assist with mapping user metadata to respective CRPC mailing lists.
 	</p>
 	<p>Assign the correct mailing list from the dropdown options below.</p>
 	<p><b>The subscription sorter runs once daily as a scheduled task. </br>
 	The next scheduled run time is <?php print_r(gmdate("l jS F Y h:i:s A", wp_next_scheduled( 'crpc_mail_list_mgr_caller' ))); ?>.</b></p>
-	<?php 
+	<?php
 }
 
 function crpc_mail_list_mgr_settings_init() {
@@ -209,8 +205,8 @@ function crpc_mail_list_mgr_settings_init() {
 	 */
     if (!class_exists(\MailPoet\API\API::class)) {
         add_settings_error(
-			"crpc_mail_list_mgrs_messages", 
-			"crpc_mail_list_mgr_message", 
+			"crpc_mail_list_mgrs_messages",
+			"crpc_mail_list_mgr_message",
 			__("Unable to locate the MailPoet API... is the plugin activated?", "crpc_mail_list_mgr"),
 			"error"
 		);
@@ -221,9 +217,9 @@ function crpc_mail_list_mgr_settings_init() {
     $mailing_lists = $mailpoet_api->getlists();
 	if(!count($mailing_lists)) {
 		add_settings_error(
-			"crpc_mail_list_mgrs_messages", 
-			"crpc_mail_list_mgr_message", 
-			__("In order to map attributes to mailing lists, the lists must first be created in the <a href='admin.php?page=mailpoet-lists' target='_blank'>MailPoet Lists Page</a>. </br>Once this is complete, the lists will appear in the dropdowns below for selection.", 
+			"crpc_mail_list_mgrs_messages",
+			"crpc_mail_list_mgr_message",
+			__("In order to map attributes to mailing lists, the lists must first be created in the <a href='admin.php?page=mailpoet-lists' target='_blank'>MailPoet Lists Page</a>. </br>Once this is complete, the lists will appear in the dropdowns below for selection.",
 			"crpc_mail_list_mgr"),
 			"error"
 		);
@@ -231,9 +227,9 @@ function crpc_mail_list_mgr_settings_init() {
 
     // Register a new section in the "crpc_mail_list_mgr" page.
     add_settings_section(
-		"crpc_mail_list_mgr_section_developers", 
-		__('Dan\'s CRPC mailing list management tool', "crpc_mail_list_mgr"), 
-		"crpc_mailer_section_dev_callback", 
+		"crpc_mail_list_mgr_section_developers",
+		__('Dan\'s CRPC mailing list management tool', "crpc_mail_list_mgr"),
+		"crpc_mailer_section_dev_callback",
 		"crpc_mail_list_mgr"
 	);
 
@@ -242,14 +238,14 @@ function crpc_mail_list_mgr_settings_init() {
         register_setting("crpc_mail_list_mgr", "crpc_mail_list_mgr_" . $canonical_name . "_options");
         // Register a new field in the "crpc_mail_list_mgr_section_developers" section, inside the "crpc_mail_list_mgr" page.
         add_settings_field(
-			"crpc_mail_list_mgr_field_" . $canonical_name, 
-			__($friendly_name . "s List", "crpc_mail_list_mgr"), 
+			"crpc_mail_list_mgr_field_" . $canonical_name,
+			__($friendly_name . "s List", "crpc_mail_list_mgr"),
 			"crpc_mail_list_mgr_field_" . $canonical_name . "_settings",
-			"crpc_mail_list_mgr", 
-			"crpc_mail_list_mgr_section_developers", 
+			"crpc_mail_list_mgr",
+			"crpc_mail_list_mgr_section_developers",
 			[
-				"label_for" => "crpc_mail_list_mgr_field_" . $canonical_name, 
-				"class" => "crpc_mail_list_mgr_row", 
+				"label_for" => "crpc_mail_list_mgr_field_" . $canonical_name,
+				"class" => "crpc_mail_list_mgr_row",
 				"crpc_mail_list_mgr_custom_data" => "custom",
 				"mailing_lists" => $mailing_lists,
 			]
@@ -356,8 +352,8 @@ function crpc_mail_list_mgr_options_page_html() {
     if (isset($_GET["settings-updated"])) {
         // add settings saved message with the class of "updated"
         add_settings_error(
-			"crpc_mail_list_mgrs_messages", 
-			"crpc_mail_list_mgr_message", 
+			"crpc_mail_list_mgrs_messages",
+			"crpc_mail_list_mgr_message",
 			__("Settings Saved", "crpc_mail_list_mgr"),
 			"updated"
 		);
@@ -379,24 +375,24 @@ function crpc_mail_list_mgr_options_page_html() {
 				}
 			?>
 		</form>
-	
+
 	<?php // Check whether the button has been pressed AND also check the nonce
     if (isset($_POST["crpc_mail_list_mgr"]) && check_admin_referer("crpc_mail_list_mgr_clicked")) {
         // the button has been pressed AND we've passed the security check
         crpc_mail_list_mgr_caller();
     } ?>
-  	<form action="admin.php?page=crpc-plugin-list-mgr" method="post">
+	<form action="admin.php?page=crpc-plugin-list-mgr" method="post">
 
 		<?php // this is a WordPress security feature - see: https://codex.wordpress.org/WordPress_Nonces
-			wp_nonce_field("crpc_mail_list_mgr_clicked"); 
+			wp_nonce_field("crpc_mail_list_mgr_clicked");
 		?>
 
 		<input type="hidden" value="true" name="crpc_mail_list_mgr" />
 		<?php if (class_exists(\MailPoet\API\API::class)) { submit_button("Run Subscription Sorter!", "secondary");} ?>
 	</form>
 
-  	</div>
-	<?php 
+    </div>
+	<?php
 	// show error/update messages
 	settings_errors("crpc_mail_list_mgrs_messages");
 }
