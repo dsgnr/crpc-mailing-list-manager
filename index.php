@@ -4,7 +4,7 @@
 Plugin Name: Dan's Mail List Tool 
 Plugin URI:  
 Description: Allows the mapping of CRPC members based on their user metadata to respective mailing lists.
-Version: 0.0.3
+Version: 0.0.4
 Author: dsgnr 
 Author URI: https://github.com/dsgnr 
 License: GPLv2 or later 
@@ -19,6 +19,22 @@ $member_list_options = [
 	"lsr_shooter" => "LSR Shooter", 
 	"full_bore_shooter" => "Full-bore Shooter"
 ];
+
+/* Registers and prunes scheduled tasks on plugin activation/removal */
+register_activation_hook( __FILE__, 'crpc_mail_list_cron_activation' );
+register_deactivation_hook( __FILE__, 'crpc_mail_list_cron_deactivation' );
+
+function crpc_mail_list_cron_activation() {
+    if ( ! wp_next_scheduled( 'crpc_mail_list_mgr_caller' ) ) {
+        wp_schedule_event( strtotime('00:00:00'), 'daily', 'crpc_mail_list_mgr_caller' );
+    }
+}
+
+function crpc_mail_list_cron_deactivation() {
+    wp_clear_scheduled_hook( 'crpc_mail_list_mgr_caller' );
+}
+
+
 
 
 function crpc_mail_list_mgr_options_page() {
@@ -140,6 +156,10 @@ function unsubscribe_user($mailpoet_api, $user_id, $lists) {
     return $unsubscribe;
 }
 
+
+
+
+
 function crpc_mail_list_mgr_caller() {
 	/**
 	 * Iterate the WordPress users and determine whether they should be added or removed from subscriptions. 
@@ -178,7 +198,9 @@ function crpc_mailer_section_dev_callback( $args ) {
 	<p>This is a custom plugin to assist with mapping user metadata to respective CRPC mailing lists.
 	</p>
 	<p>Assign the correct mailing list from the dropdown options below.</p>
-	<?php
+	<p><b>The subscription sorter runs once daily as a scheduled task. </br>
+	The next scheduled run time is <?php print_r(gmdate("l jS F Y h:i:s A", wp_next_scheduled( 'crpc_mail_list_mgr_caller' ))); ?>.</b></p>
+	<?php 
 }
 
 function crpc_mail_list_mgr_settings_init() {
@@ -343,6 +365,7 @@ function crpc_mail_list_mgr_options_page_html() {
 	?>
 	<div class="wrap">
 		<h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+
 		<form action="options.php" method="post">
 			<?php
 				// output security fields for the registered setting "crpc_mail_list_mgr"
