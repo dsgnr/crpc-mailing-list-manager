@@ -14,6 +14,7 @@ function crpc_admin_set_user_subscriptions($mailpoet_api, $user) {
         "first_name" => sanitize_text_field($user->first_name),
         "last_name" => sanitize_text_field($user->last_name),
         "full_member" => $user->{'_wpmem_products_full-member'},
+        "full_member_junior_student" => $user->{'_wpmem_products_full-member-junior-student'},
         "probationary_member" => $user->{'_wpmem_products_probationary-member'}
     ];
 
@@ -53,7 +54,9 @@ function crpc_admin_set_user_subscriptions($mailpoet_api, $user) {
         foreach (CRPC_ADMIN_MAIL_OPTIONS as $canonical_name => $friendly_name) {
             if (count(array_keys(get_option("crpc_admin_" . $canonical_name . "_mail_mgr_options") , true))) {
                 foreach(get_option("crpc_admin_" . $canonical_name . "_mail_mgr_options") as $list_options) {
+                    // Check if the user should be added to the list
                     if(!empty($sub[$canonical_name] ?? null) && ($sub[$canonical_name] ?? null)) {
+                        // Check if the user is already subscribed - no need to do it twice
                         if(!in_array($list_options, $user_subscriptions)) {
                             $mail_lists_to_add = array_merge(
                                 $mail_lists_to_add,
@@ -61,14 +64,17 @@ function crpc_admin_set_user_subscriptions($mailpoet_api, $user) {
                             );
                         }
                     } else {
-                        $mail_lists_to_remove = array_merge(
-                            $mail_lists_to_remove,
-                            get_option("crpc_admin_" . $canonical_name . "_mail_mgr_options")
-                        );
+                        if(in_array($list_options, $user_subscriptions)) {
+                            $mail_lists_to_remove = array_merge(
+                                $mail_lists_to_remove,
+                                get_option("crpc_admin_" . $canonical_name . "_mail_mgr_options")
+                            );
+                        }
                     }
                 }
             }
         }
+
         if(count($mail_lists_to_add)) {
             subscribe_user($mailpoet_api, $subscriber["id"], $mail_lists_to_add);
         }

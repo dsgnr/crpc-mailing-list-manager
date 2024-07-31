@@ -3,6 +3,10 @@ function crpc_admin_field_full_member_settings($args) {
     create_mail_list_options($args, "full_member");
 }
 
+function crpc_admin_field_full_member_junior_student_settings($args) {
+    create_mail_list_options($args, "full_member_junior_student");
+}
+
 function crpc_admin_field_probationary_member_settings($args) {
     create_mail_list_options($args, "probationary_member");
 }

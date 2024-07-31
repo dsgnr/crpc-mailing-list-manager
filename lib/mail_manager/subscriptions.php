@@ -45,6 +45,7 @@ function set_user_mail_subscriptions($mailpoet_api, $user) {
         "first_name" => sanitize_text_field($user->first_name),
         "last_name" => sanitize_text_field($user->last_name),
         "full_member" => $user->{'_wpmem_products_full-member'},
+        "full-member-junior-student	" => $user->{'_wpmem_products_full-member-junior-student'},
         "probationary_member" => $user->{'_wpmem_products_probationary-member'}
     ];
 
