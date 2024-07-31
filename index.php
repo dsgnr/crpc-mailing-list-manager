@@ -356,7 +356,7 @@ function crpc_mail_list_mgr_options_page_html() {
 				}
 			?>
 		</form>
-	</div>
+	
 	<?php // Check whether the button has been pressed AND also check the nonce
     if (isset($_POST["crpc_mail_list_mgr"]) && check_admin_referer("crpc_mail_list_mgr_clicked")) {
         // the button has been pressed AND we've passed the security check
@@ -372,8 +372,7 @@ function crpc_mail_list_mgr_options_page_html() {
 		<?php if (class_exists(\MailPoet\API\API::class)) { submit_button("Run Subscription Sorter!", "secondary");} ?>
 	</form>
 
-  </div>
-
+  	</div>
 	<?php 
 	// show error/update messages
 	settings_errors("crpc_mail_list_mgrs_messages");
